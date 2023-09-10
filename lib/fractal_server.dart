@@ -126,7 +126,7 @@ class FServer {
     }
     parts.clear();
 
-    final hash = md5.convert(bytes).toString();
+    final hash = FileF.hash(bytes).toString();
     final fw = File('$uploadDir/$hash');
     fw.writeAsBytes(bytes);
 

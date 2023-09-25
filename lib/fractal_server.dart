@@ -159,10 +159,16 @@ class FServer {
     socket.elements.stream.listen((d) {
       if (connection.readyState == WebSocket.open) {
         if (d is Map<String, dynamic> || d is List) {
-          final r = connection.add(jsonEncode(d));
+          final json = jsonEncode(d);
+          print('send to ${socket.name} >> $json');
+          try {
+            final r = connection.add(json);
+          } catch (e) {
+            print('error $e');
+          }
         }
       } else {
-        // Remove socket if the connection is already closed
+        //Remove socket if the connection is already closed
         //sockets.remove(socket.name);
       }
     }, onError: (e) {

@@ -6,7 +6,6 @@ import 'package:fractal/types/file.dart';
 import 'package:fractal_socket/session.dart';
 import 'package:fractal_utils/random.dart';
 import 'package:mime/mime.dart';
-import 'package:crypto/crypto.dart';
 import 'package:path/path.dart';
 import 'package:fractal_socket/socket.dart';
 
@@ -182,10 +181,12 @@ class FServer {
       try {
         final fractal = socket.receive(d);
 
+        /*
         if (fractal is FractalSessionAbs && socket.session != null) {
           print('session');
           fractal.handle(socket.session!);
         }
+        */
       } catch (e) {
         print('ws error: $e');
       }

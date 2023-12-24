@@ -162,7 +162,7 @@ class FServer {
           final json = jsonEncode(d);
           print('send to ${socket.name} >> $json');
           try {
-            final r = connection.add(json);
+            connection.add(json);
           } catch (e) {
             print('error $e');
           }

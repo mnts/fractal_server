@@ -11,12 +11,17 @@ environment:
 dependencies:
   fractal_utils:
     path: ../fractal_utils
+  signed_fractal:
+    path: ../signed_fractal
   fractal:
     path: ../fractal
   frac:
     path: ../frac
+  axi:
+    path: ../axi
   fractal_socket:
     path: ../fractal_socket
+  mime: ^1.0.4
   # path: ^1.8.0
 
 dev_dependencies:

@@ -21,6 +21,8 @@ dependencies:
     path: ../axi
   fractal_socket:
     path: ../fractal_socket
+  fractal_base:
+    path: '../../pub/fractal_base'
   mime: ^1.0.4
   # path: ^1.8.0
 

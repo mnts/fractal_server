@@ -1,16 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:frac/frac.dart';
-import 'package:fractal/lib.dart';
-import 'package:fractal/types/file.dart';
-import 'package:fractal_socket/session.dart';
+import 'package:fractal_base/fractals/device.dart';
+import 'package:fractal_socket/index.dart';
 import 'package:fractal_utils/random.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
-import 'package:fractal_socket/socket.dart';
+import 'package:signed_fractal/signed_fractal.dart';
 
 class FServer {
-  final uploadDir = join(FileF.path, 'uploads');
+  static final uploadDir = join(FileF.path, 'uploads');
   static const local = '127.0.0.1';
   static const lPort = 8800;
 
@@ -25,7 +23,7 @@ class FServer {
     listen();
   }
 
-  FSocket Function(String)? buildSocket;
+  ClientFractal Function(DeviceFractal)? buildSocket;
 
   listen() async {
     var server = await HttpServer.bind(
@@ -136,7 +134,7 @@ class FServer {
       ..close();
   }
 
-  Map<String, FSocket> get sockets => FSocketMix.sockets;
+  Map<DeviceFractal, ClientFractal> get sockets => ClientFractal.sockets;
 
   Future<void> socket(HttpRequest req) async {
     final seg = req.uri.path.split('/');
@@ -148,10 +146,17 @@ class FServer {
       return;
     }
 
+    final name = seg[2] ?? getRandomString(5);
+    final device = DeviceFractal.map[name] ??
+        DeviceFractal(
+          name: name,
+        );
+
     final connection = await WebSocketTransformer.upgrade(req);
-    final socket = sockets[seg[2]] ??= buildSocket?.call(seg[2]) ??
-        FSocket(
-          name: getRandomString(5),
+    final socket = sockets[device] ??= buildSocket?.call(device) ??
+        ClientFractal(
+          to: NetworkFractal.active,
+          from: device,
         );
 
     // send messages to the client

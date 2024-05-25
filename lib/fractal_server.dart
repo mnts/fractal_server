@@ -146,7 +146,7 @@ class FServer {
       return;
     }
 
-    final name = seg[2] ?? getRandomString(5);
+    final name = seg.length > 2 ? seg[2] : getRandomString(5);
     final device = DeviceFractal.map[name] ??
         DeviceFractal(
           name: name,

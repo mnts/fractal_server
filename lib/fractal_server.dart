@@ -159,7 +159,7 @@ class FServer {
       if (connection.readyState == WebSocket.open) {
         if (d is Map<String, dynamic> || d is List) {
           final json = jsonEncode(d);
-          print('send to ${socket.from.name} >> $json');
+          //print('send to ${socket.from.name} >> $json');
           try {
             connection.add(json);
           } catch (e) {

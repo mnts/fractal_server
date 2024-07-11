@@ -18,12 +18,12 @@ class FServer {
   FServer({
     this.host = local,
     this.port = lPort,
-    this.buildSocket,
+    required this.buildSocket,
   }) {
     listen();
   }
 
-  ClientFractal Function(DeviceFractal)? buildSocket;
+  ClientFractal Function(DeviceFractal) buildSocket;
 
   listen() async {
     var server = await HttpServer.bind(
@@ -115,7 +115,6 @@ class FServer {
     if (!Directory(uploadDir).existsSync()) {
       await Directory(uploadDir).create();
     }
-
     final bytes = <int>[];
     for (var part in parts) {
       final content = await part.toList();
@@ -153,18 +152,14 @@ class FServer {
         );
 
     final connection = await WebSocketTransformer.upgrade(req);
-    final socket = sockets[device] ??= buildSocket?.call(device) ??
-        ClientFractal(
-          to: NetworkFractal.active,
-          from: device,
-        );
+    final socket = sockets[device] ??= buildSocket.call(device);
 
     // send messages to the client
     socket.elements.stream.listen((d) {
       if (connection.readyState == WebSocket.open) {
         if (d is Map<String, dynamic> || d is List) {
           final json = jsonEncode(d);
-          print('send to ${socket.name} >> $json');
+          print('send to ${socket.from.name} >> $json');
           try {
             connection.add(json);
           } catch (e) {
@@ -201,6 +196,7 @@ class FServer {
         'Disconnected ${connection.closeCode}#${connection.closeReason}',
       );
       socket.disconnected();
+      socket.unSubscribeAll();
     }, onError: (e) {
       print('ws error: $e');
     });

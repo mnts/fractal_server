@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:fractal_base/fractals/device.dart';
+import 'package:fractal_socket/client.dart';
 import 'package:fractal_socket/index.dart';
 import 'package:fractal_utils/random.dart';
 import 'package:mime/mime.dart';
@@ -9,7 +11,7 @@ import 'package:signed_fractal/signed_fractal.dart';
 
 class FServer {
   static final uploadDir = join(FileF.path, 'uploads');
-  static const local = '127.0.0.1';
+  static const local = '0.0.0.0';
   static const lPort = 8800;
 
   var host = local;
@@ -105,8 +107,9 @@ class FServer {
       dataBytes.addAll(data);
     }
 
-    final boundary = req.headers.contentType!.parameters['boundary'];
-    final transformer = MimeMultipartTransformer(boundary!);
+    final boundary = req.headers.contentType?.parameters['boundary'];
+    if (boundary == null) return;
+    final transformer = MimeMultipartTransformer(boundary);
 
     final bodyStream = Stream.fromIterable([dataBytes]);
     final parts = await transformer.bind(bodyStream).toList();
@@ -136,6 +139,7 @@ class FServer {
   Map<DeviceFractal, ClientFractal> get sockets => ClientFractal.sockets;
 
   Future<void> socket(HttpRequest req) async {
+    print(req);
     final seg = req.uri.path.split('/');
     if (seg.length < 3) {
       req.response
@@ -146,40 +150,40 @@ class FServer {
     }
 
     final name = seg.length > 2 ? seg[2] : getRandomString(5);
-    final device = DeviceFractal.map[name] ??
-        DeviceFractal(
-          name: name,
-        );
+    final device = await DeviceFractal.controller.put({
+      'name': name,
+      'kind': FKind.eternal.index,
+    });
 
     final connection = await WebSocketTransformer.upgrade(req);
     final socket = sockets[device] ??= buildSocket.call(device);
-
     // send messages to the client
-    socket.elements.stream.listen((d) {
+    socket.out = (d) {
       if (connection.readyState == WebSocket.open) {
         if (d is Map<String, dynamic> || d is List) {
           final json = jsonEncode(d);
+          print('out $json');
           //print('send to ${socket.from.name} >> $json');
           try {
             connection.add(json);
           } catch (e) {
             print('error $e');
           }
+        } else if (d is String) {
+          connection.add(d);
         }
       } else {
+        print('cant out $d');
         //Remove socket if the connection is already closed
         //sockets.remove(socket.name);
       }
-    }, onError: (e) {
-      print('socket error: $e');
-      //sockets.remove(socket.name);
-    }, cancelOnError: false);
+    };
 
     // receive messages from the client
     connection.listen((d) async {
       print('received: $d');
       try {
-        final fractal = socket.receive(d);
+        socket.receive(d);
 
         /*
         if (fractal is FractalSessionAbs && socket.session != null) {
@@ -196,11 +200,19 @@ class FServer {
         'Disconnected ${connection.closeCode}#${connection.closeReason}',
       );
       socket.disconnected();
-      socket.unSubscribeAll();
+      //socket.unSubscribeAll();
+      socket.pinger?.cancel();
+      socket.pinger == null;
     }, onError: (e) {
       print('ws error: $e');
     });
+
+    socket.pinger?.cancel();
+    socket.pinger = Timer.periodic(Duration(seconds: 4), (t) {
+      socket.out('ping $unixSeconds');
+    });
     socket.connected();
+    socket.out('ping $unixSeconds');
   }
 
   notFound(HttpRequest req) {
